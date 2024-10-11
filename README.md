@@ -1,270 +1,64 @@
 ![DataCleaning](DataCleaning.png)
 
-# DataCleaning
-Fundamentals of Data Cleaning
+This program cleans and prepares a dataset named "Lifebear.com - Largest Notebook App UsersDB" stored in a CSV file. Here's a breakdown of the steps:
 
-Data cleaning is an essential process in data analysis, involving handling errors, missing data, duplicates, and outliers to prepare the data for analysis. Here's a basic introduction to common data cleaning techniques using Python:
+**1. Library Imports:**
 
-# Libraries:
-You'll need some basic libraries to work with data in Python:
+- `boto3` and `mysql-connector-python` (not used in this script, likely for optional database access).
+- `pandas` for data manipulation.
+- `numpy` (potentially unused here).
+- `os`, `csv`, and `re` for file system and regular expression operations.
+- `json`, `random`, `datetime`, `dateutil`, and `matplotlib` (potentially unused here).
+- `mysql.connector` (potentially unused here).
 
-### Pandas: Provides high-level data manipulation tools.
-### NumPy: Used for numerical computations.
+**2. Data Loading and Initial Cleaning:**
 
-```bash
-pip install pandas numpy
-```
+- Reads the CSV file using `pandas.read_csv` with `;` as the delimiter and disables memory optimization (`low_memory=False`).
+- Prints the number of missing values per column using `isnull().sum()`.
+- Fills missing values in specific columns:
+    - `login_id`: Replaced with "NA".
+    - `gender`: Replaced with -1.0 (might indicate unknown).
+    - `birthday_on`: Replaced with "NA".
 
-# Basic Steps in Data Cleaning
-## 1. Loading the Data
-The first step is to load your data into a DataFrame using Pandas.
+**3. Duplicate Removal:**
 
-```python
-import pandas as pd
-# Load the data from a CSV file
-df = pd.read_csv('data.csv')
-```
+- Identifies duplicate rows based on a combination of `login_id` and `mail_address` using `duplicated`.
+- Saves duplicate rows to a separate CSV named "lifebear_dup_garbage.csv".
+- Drops duplicate rows from the original dataframe using `drop_duplicates`.
 
-## 2. Handling Missing Data
-Missing data is common in real-world datasets. You can either remove or fill missing values.
+**4. "created_at" Cleaning:**
 
-- Checking for missing values:
-```python
-# Check for missing values
-print(df.isnull().sum())
-```
-- Removing rows with missing data:
-```python
-# Drop rows with any missing values
-df_cleaned = df.dropna()
-```
+- Assumes "created_at" contains datetime values.
+- Converts "created_at" to date format only by extracting the date part using `pd.to_datetime().dt.date`.
 
-- Filling missing values:
-```python
+**5. Column Renaming:**
 
-# Fill missing values with a specific value (e.g., 0 or mean)
-df['column_name'] = df['column_name'].fillna(0)
+- Renames specific columns using `rename` with `inplace=True` to modify the original dataframe.
+  - `mail_address` to `e_mail_address`.
+  - `created_at` to `created_on`.
+  - `birthday_on` to `birthdate`.
 
-# Fill missing values with the mean of the column
-df['column_name'] = df['column_name'].fillna(df['column_name'].mean())
-```
+**6. Invalid Email Handling:**
 
-# 3. Removing Duplicates
-Duplicate data can skew analysis, so it's important to identify and remove it.
+- Defines a function `is_valid_email` using regular expressions to validate email format.
+- Filters rows with invalid emails using `~` (not) operator on the function applied to the `e_mail_address` column.
+- Removes rows with invalid emails from the main dataframe.
+- Saves those rows to a separate CSV named "invalid_email_addresses.csv".
 
-```python
-# Find duplicates
-duplicates = df[df.duplicated()]
+**7. Merging Garbage Files:**
 
-# Remove duplicates
-df_cleaned = df.drop_duplicates()
-```
+- Reads the two previously created CSV files containing duplicates and invalid emails.
+- Concatenates them into a single dataframe using `pd.concat`.
+- Saves the merged dataframe to a new CSV named "garbage.csv".
 
-# 4. Converting Data Types
-Sometimes, data may be in the wrong format (e.g., strings instead of integers).
+**8. Dataframe Reset and Text Cleaning:**
 
-```python
-# Convert a column to a numeric data type
-df['column_name'] = pd.to_numeric(df['column_name'], errors='coerce')
+- Resets the index of the dataframe, effectively removing the previous row numbers.
+- Converts all text in the `login_id` column to lowercase using `str.lower`.
+- Removes leading and trailing whitespaces from the `login_id`, `password`, and `salt` columns using `str.strip`.
 
-# Convert to datetime
-df['date_column'] = pd.to_datetime(df['date_column'], errors='coerce')
-```
+**9. Exporting Cleaned Data:**
 
-# 5. Handling Outliers
-Outliers can distort statistical analysis, so you may want to remove or treat them.
+- Saves the final cleaned dataframe to a CSV named "cleaned_lifebear_dataset.csv" using `to_csv` (without the index).
 
-Removing outliers using interquartile range (IQR):
-```python
-Q1 = df['column_name'].quantile(0.25)
-Q3 = df['column_name'].quantile(0.75)
-IQR = Q3 - Q1
-
-# Define bounds for outliers
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
-
-# Filter out outliers
-df_cleaned = df[(df['column_name'] >= lower_bound) & (df['column_name'] <= upper_bound)]
-```
-
-# 6. Renaming Columns
-For consistency and readability, it’s a good practice to rename columns.
-
-```python
-# Rename a specific column
-df.rename(columns={'old_name': 'new_name'}, inplace=True)
-```
-
-# 7. Standardizing Data
-Standardizing data (such as lowercasing all text in a column) can improve consistency.
-
-```python
-# Convert all text to lowercase
-df['column_name'] = df['column_name'].str.lower()
-
-# Strip leading and trailing whitespace
-df['column_name'] = df['column_name'].str.strip()
-```
-# 8. Dealing with Invalid Data
-You may encounter invalid data that doesn't fit expected values. You can remove or correct it.
-
-```python
-# Remove rows where column_name has invalid data
-df_cleaned = df[df['column_name'].apply(lambda x: isinstance(x, (int, float)))]
-```
-
-# Example Workflow
-
-```python
-
-import pandas as pd
-import numpy as np
-
-# Load the data
-df = pd.read_csv('data.csv')
-
-# Handle missing data
-df.fillna(df.mean(), inplace=True)
-
-# Remove duplicates
-df.drop_duplicates(inplace=True)
-
-# Convert column to numeric
-df['age'] = pd.to_numeric(df['age'], errors='coerce')
-
-# Handle outliers
-Q1 = df['salary'].quantile(0.25)
-Q3 = df['salary'].quantile(0.75)
-IQR = Q3 - Q1
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
-df = df[(df['salary'] >= lower_bound) & (df['salary'] <= upper_bound)]
-
-# Rename columns
-df.rename(columns={'Name': 'name'}, inplace=True)
-
-# Convert text to lowercase
-df['name'] = df['name'].str.lower()
-
-# Final cleaned data
-print(df.head())
-```
-<!-- Break -->
-
-
-# Additional Cleaning Functions
-
-   <details>
-    <summary>Take a Look!</summary>
-
-```
-# Check for missing values
-print(df.isnull().sum())
-```
-# Drop rows with any missing values
-df_cleaned = df.dropna()
-```
-# Fill missing values with a specific value (e.g., 0 or mean)
-df['column_name'] = df['column_name'].fillna(0)
-```
-# Fill missing values with the mean of the column
-df['column_name'] = df['column_name'].fillna(df['column_name'].mean())
-```
-# Find duplicates
-duplicates = df[df.duplicated()]
-```
-# Remove duplicates
-df_cleaned = df.drop_duplicates()
-```
-# Convert a column to a numeric data type
-df['column_name'] = pd.to_numeric(df['column_name'], errors='coerce')
-```
-# Convert a column to a numeric data type
-df['column_name'] = pd.to_numeric(df['column_name'], errors='coerce')
-```
-# Convert a column to a numeric data type
-df['column_name'] = pd.to_numeric(df['column_name'], errors='coerce')
-```
-# Convert a column to a numeric data type
-df['column_name'] = pd.to_numeric(df['column_name'], errors='coerce')
-```
-# Convert a column to a numeric data type
-df['column_name'] = pd.to_numeric(df['column_name'], errors='coerce')
-```
-# Melt the DataFrame
-df_melted = pd.melt(df, id_vars=['id_vars'], value_vars=['value_vars'])
-```
-# Merge two DataFrames
-df_merged = pd.merge(df1, df2, on='common_column')
-```
-# Concatenate DataFrames
-df_concat = pd.concat([df1, df2], axis=0)
-```
-# Sort by column values
-df_sorted = df.sort_values(by='column_name', ascending=False)
-```
-# Reset index
-df_reset = df.reset_index(drop=True)
-```
-# Set a column as index
-df_indexed = df.set_index('column_name')
-```
-# Remove outliers
-df_no_outliers = df[(df['column_name'] > lower_bound) & (df['column_name'] < upper_bound)]
-```
-# Cap outliers
-df['column_name'] = df['column_name'].clip(lower=lower_bound, upper=upper_bound)
-```
-# Create a new column based on a condition
-df['new_column'] = df['column_name'].apply(lambda x: 'High' if x > threshold else 'Low')
-```
-# Apply a function to a column
-df['column_name'] = df['column_name'].apply(lambda x: x * 2)
-```
-# Convert string values in a column to uppercase.
-```
-# Convert to uppercase
-df['column_name'] = df['column_name'].str.upper()
-```
-# Convert a column to datetime format.
-```
-# Convert to datetime
-df['date_column'] = pd.to_datetime(df['date_column'])
-```
-# Extract the year from a datetime column.
-```
-# Extract year from date
-df['year'] = df['date_column'].dt.year
-```
-# Calculate the rolling mean of a column.
-```
-# Calculate rolling mean
-df['rolling_mean'] = df['column_name'].rolling(window=3).mean()
-```
-# Calculate the cumulative sum of a column.
-```
-# Calculate cumulative sum
-df['cumsum'] = df['column_name'].cumsum()
-```
-# Fill missing values using interpolation.
-```
-# Interpolate missing values
-df['column_name'] = df['column_name'].interpolate()
-```
-# One-Hot Encode Categorical Variables: Convert categorical variables into dummy/indicator variables.
-```
-# One-hot encode categorical variables
-df_encoded = pd.get_dummies(df, columns=['categorical_column'])
-```
-# Normalize data to a specific range.
-```
-# Normalize data
-df['normalized_column'] = (df['column_name'] - df['column_name'].min()) / (df['column_name'].max() - df['column_name'].min())
-```
-# Group data into specified intervals.
-```
-# Bin data into intervals
-df['binned_column'] = pd.cut(df['column_name'], bins=[0, 10, 20, 30], labels=['Low', 'Medium', 'High'])
-```
-   </details>
+**Overall, this program cleans the "Lifebear.com" user dataset by handling missing values, removing duplicates, fixing date format, renaming columns, validating and removing invalid emails, merging temporary garbage files, cleaning text data, and finally exporting the cleaned data to a new CSV file.**
