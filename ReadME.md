@@ -1,3 +1,5 @@
+![DataCleaning](dataclean.jpg)
+
 # CarOwnersNationwide Data Cleaning Script
 
 ## Overview
