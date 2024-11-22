@@ -1,3 +1,5 @@
+![DataCleaning](DataCleaning.png)
+
 # Explanation of `hautelook.py`
 
 This Python script processes a .csv file containing leaked user data, focusing on cleaning, validation, and filtering records. Below is a step-by-step explanation:
